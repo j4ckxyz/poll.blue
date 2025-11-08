@@ -10,6 +10,7 @@ export default function PostPoll() {
   const [error, setError] = useState("");
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [replyTo, setReplyTo] = useState(undefined);
+  const [pdsHost, setPdsHost] = useState("");
   async function postPoll(evt: Event) {
     evt.preventDefault();
     const response = await fetch("/api/poll", {
@@ -21,6 +22,7 @@ export default function PostPoll() {
         answers: options.filter((opt) => opt != ""),
         user_agent: "poll.blue",
         reply_to: replyTo,
+        pds_host: pdsHost,
       }),
     });
     if (response.status === 200) {
@@ -121,6 +123,23 @@ export default function PostPoll() {
             </a>
           </p>
           <div class={showAdvanced ? "" : "hidden"}>
+            <label
+              class="block text-gray-400 text-sm font-bold mb-2"
+              for="pds_host"
+            >
+              Custom PDS Host (optional, defaults to bsky.social)
+            </label>
+            <input
+              class="appearance-none border rounded mb-2 w-full py-2 px-3 text-gray-400 leading-tight focus:outline-none focus:shadow-outline"
+              id="pds_host"
+              type="text"
+              value={pdsHost}
+              maxLength={200}
+              onInput={({ target }) => {
+                setPdsHost(target && (target as any).value);
+              }}
+              placeholder="https://my-pds.example.com"
+            />
             <label
               class="block text-gray-400 text-sm font-bold mb-2"
               for="reply_to"

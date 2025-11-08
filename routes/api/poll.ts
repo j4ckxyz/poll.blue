@@ -6,7 +6,7 @@ import { generateId, generatePollText } from "../../app/poll-utils.ts";
 import { default as Agent } from "https://esm.sh/v115/@atproto/api@0.2.3"
 import { z } from "https://deno.land/x/zod@v3.16.1/mod.ts";
 import { getConfig } from "../../app/config.ts";
-import { json } from "../../app/utils.ts";
+import { json, normalizePdsUrl } from "../../app/utils.ts";
 
 const postPollSchema = z.object({
     question: z.string().min(1).max(200),
@@ -15,6 +15,7 @@ const postPollSchema = z.object({
     password: z.string(),
     user_agent: z.string().max(100),
     reply_to: z.string().max(200).optional(),
+    pds_host: z.string().max(200).optional(),
 });
 
 export const handler = async (req: Request, _ctx: HandlerContext): Promise<Response> => {
@@ -33,7 +34,7 @@ export const handler = async (req: Request, _ctx: HandlerContext): Promise<Respo
             "error": pollParse.error.format()
         }), { status: 400 });
     }
-    const { question, answers, handle, password, user_agent: userAgent, reply_to: replyTo } = pollParse.data;
+    const { question, answers, handle, password, user_agent: userAgent, reply_to: replyTo, pds_host: pdsHost } = pollParse.data;
     const enumeration = "number";
     const visibleId = generateId(6);
     const results = answers.map(() => 0).concat([0]);
@@ -51,7 +52,9 @@ export const handler = async (req: Request, _ctx: HandlerContext): Promise<Respo
         }), { status: 400, headers: { "Content-Type": "application/json" } });
     }
     const createdAt = (new Date()).toISOString();
-    const agent = new Agent({ service: getConfig('BSKY_HOST') });
+    // Use custom PDS host if provided, otherwise default to BSKY_HOST
+    const serviceUrl = pdsHost ? normalizePdsUrl(pdsHost) : getConfig('BSKY_HOST');
+    const agent = new Agent({ service: serviceUrl });
     try {
         await agent.login({
             identifier: handle,
